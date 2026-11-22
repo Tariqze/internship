@@ -1712,10 +1712,19 @@ function vBkImpCard(){
   return `<div class="card" style="display:flex;flex-direction:column;gap:12px"><h3 style="margin:0">استيراد الحجوزات المؤكدة (Excel)</h3>
    <p class="muted small" style="margin:0">ارفع ملف الحجوزات المجهّز. يُسجّل الحجز وحجز المقعد، والتدريب الخارجي كمعتمد، والتأجيل (Skip) مع شهره التعويضي. <b>يجب استيراد الطلاب أولًا.</b> من لديه حجوزات سابقة في النظام يُتخطّى ولا يُستبدل. تُسجَّل الحجوزات كما وردت حتى لو تجاوزت السعة.</p>
    <label class="btn" style="cursor:pointer;align-self:flex-start">اختيار ملف الحجوزات<input type="file" accept=".xlsx,.xls" data-a-change="bkifile" style="display:none"></label>
-   ${f?`<div class="banner ${f.err?'warn':'info'}">${f.err?esc(f.err):'الملف: <b>'+esc(f.name)+'</b> — '+f.rows.length+' شهرًا لـ '+f.sids+' طالبًا (حجز '+f.nb+'، خارجي '+f.ne+'، تأجيل '+f.ns+'). '+(f.noStu?'<br>طلاب غير موجودين في القاعدة الرئيسية: <b>'+f.noStu+'</b> (استورد الطلاب أولًا). ':'')+(f.exist?'<br>طلاب لديهم حجوزات سابقة وسيُتخطَّون: <b>'+f.exist+'</b>. ':'')}</div>`:''}
+   ${f?`<div class="banner ${f.err?'warn':'info'}">${f.err?esc(f.err):'الملف: <b>'+esc(f.name)+'</b> — '+f.rows.length+' شهرًا لـ '+f.sids+' طالبًا (حجز أساسي '+(f.nb-(f.nel||0))+'، اختياري '+(f.nel||0)+'، خارجي '+f.ne+'، تأجيل '+f.ns+'). '+(f.noStu?'<br>طلاب غير موجودين في القاعدة الرئيسية: <b>'+f.noStu+'</b> (استورد الطلاب أولًا). ':'')+(f.exist?'<br>طلاب لديهم حجوزات سابقة وسيُتخطَّون: <b>'+f.exist+'</b>. ':'')}</div>`:''}
    ${f&&!f.err?`${fld('للتأكيد اكتب كلمة: استيراد',inp('bki_confirm','text','data-rr'))}<div>${btn('استيراد الحجوزات الآن','bkirun',{},'bad',S.busy)}</div>`:''}
    ${S.bkiRes?`<div class="banner ok">${esc(S.bkiRes)}</div>`:''}
+   ${vElConv()}
   </div>`;
+}
+const elConvList=()=>{const r=[];S.books.forEach((b,uid)=>{for(const [q,it] of Object.entries((b&&b.items)||{})){if(it&&!it.el&&!it.ext&&!it.failed&&it.spec&&!String(it.hid).startsWith('x_')&&SP[it.spec]&&!SP[it.spec].core)r.push([uid,+q])}});return r};
+function vElConv(){
+  if(!S.isOwner)return '';const L=elConvList();
+  return `<hr style="border:0;border-top:1px solid var(--line,#ddd);width:100%"><b>تحويل الحجوزات الموجودة إلى «اختياري»</b>
+   <p class="muted small" style="margin:0">أي حجز لتخصص غير أساسي (وليس خارجيًا) مسجَّل كحجز عادي يُحوَّل إلى اختياري معتمد، مع بقاء المستشفى والتخصص والمقعد كما هي. الحجوزات الأساسية والخارجية والتأجيل لا تُمَسّ.</p>
+   <div class="banner ${L.length?'info':'ok'}">${L.length?'حجوزات ستتحوّل: <b>'+L.length+'</b> لـ <b>'+new Set(L.map(x=>x[0])).size+'</b> طالبًا':'لا توجد حجوزات تحتاج تحويلًا'}</div>
+   ${L.length?`${fld('للتأكيد اكتب كلمة: تحويل',inp('elc_confirm','text','data-rr'))}<div>${btn('تحويل إلى اختياري','elconv',{},'bad',S.busy)}</div>`:''}`;
 }
 const bkiUid=sid=>{const m=S.students.get(safeId(sid));if(!m)return null;return NL()?'s_'+String(sid).toLowerCase():(m.uid||null)};
 async function importBookings(f){return bulk(()=>_importBookings(f))}
@@ -1737,7 +1746,7 @@ async function _importBookings(f){
       if(r.k==='ext'){const sp=SP[r.sp];if(!sp)continue;
         const xid='imp_'+sid+'_'+r.seq;exts.push(S.db.doc('externals/'+xid).set({uid,name:m.name,seq:r.seq,ym,kind:sp.core?'core':'elective',spec:r.sp,hospAr:'خارج جازان',hospEn:'Outside Jazan',specAr:sp.ar,specEn:sp.en,status:'approved',by:S.uid,decidedAt:now,at:now,note:'مستورد من نموذج الحجز'}).then(()=>{items[r.seq]={ym,hid:'x_'+xid,spec:r.sp,ext:1,at:now,by:S.uid};c.ext++}));continue}
       if(!HP[r.hid]||!SP[r.sp])continue;
-      items[r.seq]={ym,hid:r.hid,spec:r.sp,at:now,by:S.uid};c.bk++;
+      items[r.seq]=SP[r.sp].core?{ym,hid:r.hid,spec:r.sp,at:now,by:S.uid}:{ym,hid:r.hid,spec:r.sp,el:1,elok:1,at:now,by:S.uid};c.bk++;
       const key=skey(r.hid,r.sp,ym);(slots[key]=slots[key]||{hid:r.hid,spec:r.sp,ym,add:[]}).add.push(uid)}
     await Promise.all(exts);
     await S.db.doc('bookings/'+uid).set({uid,name:m.name,cohortId:u.cohortId||'',items,skips:{},extras,postponed});c.done++};
@@ -3445,6 +3454,10 @@ const A={
    run(()=>bulk(async()=>{let n=0;for(const c of Object.keys(f.obj.cols)){const rows=f.obj.cols[c];for(let i=0;i<rows.length;i+=20)await Promise.all(rows.slice(i,i+20).map(r=>S.db.doc(c+'/'+r.id).set(r.data)));n+=rows.length}
     S.f.bk_confirm='';S.bkf=null;if(auditLog)auditLog('backup','استعادة نسخة احتياطية: '+n+' سجلًا')}),'اكتملت الاستعادة. حدّث الصفحة لرؤية البيانات')},
  seataud:()=>{if(!S.isOwner)return;S.seatAud=seatAudit();rr()},
+ elconv:()=>{if(!S.isOwner)return toast('هذا الإجراء لمالك المنصة فقط.');if(fv('elc_confirm','').trim()!=='تحويل')return toast('اكتب كلمة: تحويل للتأكيد.');
+   run(async()=>{const L=elConvList(),by={};L.forEach(([u,q])=>(by[u]=by[u]||[]).push(q));const us=Object.keys(by);
+     await bulk(async()=>{for(let i=0;i<us.length;i+=5)await Promise.all(us.slice(i,i+5).map(u=>writeBooking(u,it=>{by[u].forEach(q=>{if(it[q]&&!it[q].el)it[q]={...it[q],el:1,elok:1}})})))});
+     auditLog('owner','تحويل الحجوزات غير الأساسية إلى اختياري',{n:L.length,students:us.length});S.f.elc_confirm=''},'تم تحويل الحجوزات غير الأساسية إلى اختياري')},
  seatfix:()=>run(async()=>{if(!S.isOwner)throw new Error('permission-denied');const a=seatAudit();for(const r of a.rows)await S.db.doc('slots/'+r.k).set(r.body);auditLog('owner','إصلاح عدّادات المقاعد',{n:a.rows.length});S.seatAud=seatAudit()},'تم إصلاح العدّادات'),
  bkirun:()=>{const f=S.bki;if(!f||f.err)return toast('اختر ملف الحجوزات أولًا.');if(fv('bki_confirm','').trim()!=='استيراد')return toast('اكتب كلمة: استيراد للتأكيد.');
    run(async()=>{const c=await importBookings(f);S.f.bki_confirm='';S.bki=null;
@@ -3561,7 +3574,7 @@ const AC={
        if(!sid||!(seq>=1&&seq<=TOTAL)||!k)return;rows.push({sid,seq,k,sp:String(r['رمز التخصص']||'').trim(),hid:String(r['رمز المستشفى']||'').trim()})});
      if(!rows.length)throw new Error('bad');
      const sids=[...new Set(rows.map(r=>r.sid))],noStu=sids.filter(s=>!bkiUid(s)).length,exist=sids.filter(s=>{const u=bkiUid(s),b=u&&S.books.get(u);return b&&(Object.keys(b.items||{}).length||Object.keys(b.postponed||{}).length)}).length;
-     S.bki={name:fl.name,rows,sids:sids.length,nb:rows.filter(r=>r.k==='book').length,ne:rows.filter(r=>r.k==='ext').length,ns:rows.filter(r=>r.k==='skip').length,noStu,exist};S.bkiRes=''}
+     S.bki={name:fl.name,rows,sids:sids.length,nb:rows.filter(r=>r.k==='book').length,nel:rows.filter(r=>r.k==='book'&&SP[r.sp]&&!SP[r.sp].core).length,ne:rows.filter(r=>r.k==='ext').length,ns:rows.filter(r=>r.k==='skip').length,noStu,exist};S.bkiRes=''}
     catch(e){S.bki={name:fl.name,err:'الملف ليس ملف حجوزات صالحًا (الأعمدة: الرقم الجامعي، رقم الشهر، النوع، رمز التخصص، رمز المستشفى).'}}render()})()},
  urole:el=>{const x=S.users.get(el.dataset.u),r=el.dataset.r;let roles=[...(x.roles||[])];
   if((r==='coordinator'||r==='center')&&!S.isOwner){toast('منح هذا الدور لمالك المنصة فقط.');render();return}
