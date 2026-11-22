@@ -2020,12 +2020,12 @@ function eligPage(dc){
   const dm=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[3]+'/'+m[2]+'/'+m[1]:''};
   const ap=dc.status==='approved',st=(cfg().stamps||{}).main,stI=ap&&st&&SEAL_IMG[st.fileId]?SEAL_IMG[st.fileId]:'',pn=c.pname||(ap&&dc.seal?(dc.seal.ne||dc.seal.n||''):'');
   const T=(x,y,t,f)=>`<div class="eg-t" style="left:${P(x)};top:${P(y)};${f||''}">${t}</div>`;
-  const chk=(x,y)=>`<svg class="eg-c" style="left:${P(x)};top:${P(y)};width:${P(10)};height:${P(13)}" viewBox="0 0 10 13"><path d="M1.6 7.2 4 10 8.6 2.4" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const chk=(x,y)=>`<svg class="eg-c" style="left:${P(x)};top:${P(y)};width:${P(11)};height:${P(11)}" viewBox="0 0 11 11"><path d="M1.8 5.8 4.4 8.4 9.4 2" fill="none" stroke="#000" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   return `<div class="elgp"><style>.elgp{direction:ltr;position:relative;width:794px;height:1123px;background:#fff;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#000}.elgp .bg{position:absolute;left:${P(27)};top:0;width:${P(558.36)};height:${P(811.56)}}.eg-t{position:absolute;white-space:nowrap;line-height:1}.eg-c{position:absolute}</style>
   <img class="bg" src="${ELG_BG}" alt="">
   ${T(137,170.5,esc(u.nameEn||u.name||''),'font-size:'+P(11.5)+';font-weight:bold')}
   ${T(194,196,'<bdi dir="ltr">'+esc(u.nid||'')+'</bdi>','font-size:'+P(11.5)+';font-weight:bold')}
-  ${chk(54.6,276.8)}${chk(54.6,415.9)}
+  ${chk(53.7,272.6)}${chk(53.7,414.2)}
   ${T(166,414.5,esc(dm(stStartDate(u))),'font-size:'+P(10.5)+';font-weight:bold')}${T(268,414.5,esc(dm(stEndDate(u))),'font-size:'+P(10.5)+';font-weight:bold')}
   ${T(234.6,508,esc(c.dean),'font-size:'+P(10.8)+';font-weight:bold')}
   ${T(234.6,539,esc(pn),'font-size:'+P(10.8)+';font-weight:bold')}
