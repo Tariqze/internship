@@ -139,6 +139,7 @@ button.mon{cursor:pointer} button.mon:hover{border-color:var(--accent)}
 .lh-meta{position:absolute;left:52px;right:52px;bottom:128px;height:30px;border:1px solid #222;border-radius:8px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:12px;font-weight:600;color:#111}
 .lh-ban{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);width:380px;height:86px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
 .lh-pg{position:absolute;left:34px;bottom:34px;font-size:11px;color:#666}
+.lh-body tbody tr:last-child td,.lh-body tbody tr:last-child th{border-bottom:1px solid #888}.lh-body .mb-t tbody tr:last-child td{border-bottom:1px solid #333}
 .savebar{position:sticky;bottom:12px;background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 6px 22px rgba(0,0,0,.18);z-index:5}
 .seatrow.pickd{outline:2px solid var(--accent);border-radius:10px}
 .gchip{position:fixed;left:16px;bottom:16px;z-index:30;display:flex;gap:8px;align-items:center;cursor:pointer;padding:8px 14px;border-radius:99px;box-shadow:0 4px 16px rgba(0,0,0,.2);background:var(--surface);border:1px solid var(--line)}
@@ -2061,12 +2062,29 @@ function traineePages(dc){
   </div>`;
   return [p1,p2];
 }
+/* نموذج مباشرة طبيب امتياز (خطاب المباشرة): نموذج الكلية المعتمد داخل ترويسة الكلية الرسمية */
+function startForm(dc){
+  const u=S.users.get(dc.uid)||{},c=unitCfg(),ap=dc.status==='approved',st=(cfg().stamps||{}).main,stI=ap&&st&&SEAL_IMG[st.fileId]?SEAL_IMG[st.fileId]:'';
+  let d=null;if(dc.ym){const m=String(dc.ym).match(/^(\d{4})-(\d{2})/);if(m)d=new Date(+m[1],+m[2]-1,1)}
+  const dg=d?String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()+'م':'',dh=d?hijriNum(d):'';
+  const row=(l,v,x)=>`<tr><td class="mb-v">${v||''}</td><td class="mb-l">${l}</td></tr>`;
+  const box=(t,rows,stampImg,stampLbl)=>`<div class="mb-h">${t}</div><table class="mb-t mb-b"><tbody>${rows.map((r,i)=>`<tr>${i===0?`<td rowspan="${rows.length}" class="mb-s"><div class="mb-sl">${stampLbl}</div><div class="mb-c">${stampImg?`<img src="${stampImg}" alt="">`:''}</div></td>`:''}<td class="mb-v">${r[1]||''}</td><td class="mb-l">${r[0]}</td></tr>`).join('')}</tbody></table>`;
+  return `<style>.mb-tt{text-align:center;font-weight:700;font-size:17px;text-decoration:underline;margin:4px 0 14px}.mb-t{width:100%;border-collapse:collapse;margin:0 0 12px;table-layout:fixed}.mb-t td{border:1px solid #333;padding:4px 10px;height:30px;font-size:13px;vertical-align:middle}.mb-l{width:36%;font-weight:600;background:#f4f6f7}.mb-v{font-weight:600}
+  .mb-h{border:1px solid #333;border-bottom:0;text-align:center;font-weight:700;background:#e8eef0;padding:3px;font-size:13px}.mb-b{margin-bottom:12px}.mb-s{width:26%;text-align:center;vertical-align:top!important;padding:6px!important;background:#fff}.mb-sl{font-size:12px;font-weight:600}.mb-c{width:104px;height:104px;margin:8px auto 0;border:1.5px dashed #444;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden}.mb-c img{max-width:92%;max-height:92%}.mb-ct{font-size:11.5px;color:#444;text-align:center;margin-top:6px}</style>
+  <div class="mb-tt">نموذج مباشرة طبيب إمتياز</div>
+  <table class="mb-t"><tbody>${row('اسم الطبيب',esc(u.name||''))}${row('رقم الهوية','<bdi dir="ltr">'+esc(u.nid||'')+'</bdi>')}${row('الرقم الجامعي','<bdi dir="ltr">'+esc(u.studentId||'')+'</bdi>')}${row('الجامعة المشرفة على التدريب','جامعة جازان')}</tbody></table>
+  <table class="mb-t"><tbody>${row('اسم المستشفى',esc(dc.hid?hn(dc.hid):''))}${row('اسم الدورة التدريبية',esc(dc.spec?sn(dc.spec):''))}${row('تاريخ المباشرة',d?esc(dg)+' &nbsp;الموافق&nbsp; <bdi dir="ltr">'+esc(dh)+'</bdi> هـ':'')}</tbody></table>
+  ${box('خاص بالمستشفى',[['اسم المشرف على التدريب',esc(ap&&dc.byName?dc.byName:'')],['التوقيع',''],['المدير الطبي',''],['التوقيع','']],'','الختم الرسمي للمستشفى')}
+  ${box('خاص بالكلية',[['مشرف الامتياز',''],['التوقيع',''],['مشرف وحدة شؤون المستشفيات والامتياز',esc(c.sig1&&c.sig1.name||'')],['التوقيع','']],stI,'ختم الكلية')}
+  <div class="mb-ct" dir="ltr">${c.email?'Email: '+esc(c.email):''}${c.phone?(c.email?', ':'')+'Tel: '+esc(c.phone):''}</div>`;
+}
 function docPages(dc){
   const u=S.users.get(dc.uid)||{},t=DT[dc.type],custom=!!docsCfg().tpl[dc.type];
   const txt=fillTpl(docsCfg().tpl[dc.type]||DEF_TPL[dc.type],docVals(dc,u)).split(/\n\s*\n/).map(p=>`<p>${esc(p).replace(/\n/g,'<br>')}</p>`).join('');
   if(dc.type==='plan')return [planFormPage(dc.uid,dc.serial)];
   if(dc.type==='elig')return [eligPage(dc)];
   if(dc.type==='trainee')return traineePages(dc);
+  if(dc.type==='start')return [pdfShell(startForm(dc),1,1,dc.serial||'—')];
   let extra='';
   if(dc.type==='plan'){
     const it=itemsOf(dc.uid),po=postOf(dc.uid);
